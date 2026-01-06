@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 from app.database import collection
 from app.models import User
 from bson import ObjectId
@@ -25,23 +25,48 @@ def get_users():
     users = collection.find()
     return [serialize_user(user) for user in users]
 
-# READ ONE
 @router.get("/users/{user_id}")
 def get_user(user_id: str):
-    user = collection.find_one({"_id": ObjectId(user_id)})
-    return serialize_user(user)
+    try:
+        user = collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        return serialize_user(user)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user ID"
+        )
 
-# UPDATE
+
 @router.put("/users/{user_id}")
 def update_user(user_id: str, user: User):
-    collection.update_one(
+    result = collection.update_one(
         {"_id": ObjectId(user_id)},
         {"$set": user.dict()}
     )
+
+    if result.matched_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
     return {"message": "User updated"}
 
-# DELETE
+
 @router.delete("/users/{user_id}")
 def delete_user(user_id: str):
-    collection.delete_one({"_id": ObjectId(user_id)})
+    result = collection.delete_one({"_id": ObjectId(user_id)})
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
     return {"message": "User deleted"}
+
