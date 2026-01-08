@@ -2,8 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 
-class VectorCreateRequest(BaseModel):
-    text: str
+
 
 
 class VectorSearchRequest(BaseModel):
